@@ -1,0 +1,1 @@
+In the works: Bus pirate bindings for Node.
