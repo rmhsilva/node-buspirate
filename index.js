@@ -10,44 +10,51 @@ module.exports = BusPirate;
 var _options = {
 	baud: 115200
 };
+/**
+ * BusPirate constructor
+ * @param {string} device  Path to device, eg /dev/tty.usbblah
+ * @param {array} options  Options to override the defaults above
+ */
 function BusPirate(device, options) {
 	var self = this;
 	options = options || {};
 	options.baud = options.baud || 115200;
+
+	this.bitbang = false;
+	this.mode = '';
+	this.waitlist = {};
+	this.open = false;
 
 	if (!device) {
 		throw new Error('Device must be specified');
 	}
 
 	this.port = new SerialPort(device, {
-		baudrate: options.baud,
-		buffersize: 1,
-		parser: response_parser()
+		baudrate: options.baud
+		//parser: response_parser(self)
 	});
-
-	this.bitbang = false;
-	this.mode = '';
-	this.waiting = false;
-	this.waitack = '';
-	this.open = false;
 
 	this.port.on('open', function() {
 		console.log('Device open: ' + device);
 		self.open = true;
-	});
 
-	// Custom events:
-	this.port.on('changemode', function(mode) {
-		// BP mode changed
-		self.mode = mode;
-	});
-	this.port.on('bitbang', function() {
-		// Bitbang mode started
-		self.bitbang = true;
-	});
-	this.port.on('data', function(data) {
-		// Generic data
-		//console.log(data);
+		// Handle new data
+		self.port.on('data', function(data) {
+			// First search for responses that are waited for
+			for (var key in self.waitlist) {
+				var len = key.length;
+
+				if (data.length >= len && data.slice(0,len).toString() === key) {
+					console.log('Found: '+key);
+					delete self.waitlist.key;
+					self.waitlist[key](data);
+					return;
+				}
+			}
+
+			// Otherwise, print the data
+			console.log('data: '+data);
+		});
 	});
 }
 
@@ -57,37 +64,58 @@ BusPirate.prototype.close = function() {
 	});
 };
 
-BusPirate.prototype.reset_console = function() {
-	for (var i = 10; i >= 0; i--) {
-		this.port.write(new Buffer([0x0d]));		// send enter
+BusPirate.prototype.reset_console = function(n) {
+	var self = this;
+	n = n || 11;
+
+	if (n > 1) {
+		// Send enter 10 times, synchronously
+		this.port.write([0x0d], function() {
+			self.reset_console(n-1);
+		});
 	}
-	this.port.write('#');
+	else this.port.write('#');
 };
 
 BusPirate.prototype.enter_bitbang = function() {
-	for (var i = 40; i >= 0 && !this.bitbang; i--) {
-		this.port.write(new Buffer([0]));
-	}
+	var self = this;
+	this.wait_for_resp('BBIO1', function() {
+		self.bitbang = true;
+	});
+
+	for (var i = 40; i >= 0 && !this.bitbang; i--)
+		this.port.write([0x00]);
 
 	return this.bitbang;
 };
 
 BusPirate.prototype.switch_mode = function(mode, callback) {
-	switch(mode) {
-		case 'uart': wait_for_acc(this, 0x03, 'ART1');
-		break;
+	var modes = {
+		'uart': {out: 0x03, resp: 'ART1'}
+	};
+	var m = modes[mode];
+
+	if ('undefined' != typeof m) {
+		this.port.write([m.out]);
+		this.send_and_wait(m.resp, callback);
 	}
 };
 
 
-function wait_for_acc(bp, send, ack) {
-	bp.port.write(new Buffer([send]));
+BusPirate.prototype.wait_for_resp = function(response, callback) {
+	this.waitlist[response] = callback;
+};
 
-	bp.waiting = true;
-	bp.waitack = ack;
+function buffers_equal(b1, b2) {
+	if (b1.length !== b2.length) return false;
+
+	for (var i = 0; i < b1.length; i++) {
+		if (b1[i] !== b2[i]) return false;
+	}
 }
 
-function response_parser() {
+
+function response_parser(bp) {
 	// Handle received data
 	var packet = [];
 	var pos = 0;
@@ -108,7 +136,7 @@ function response_parser() {
 			packet = [];
 		}
 		else if (pos==5 && 'BBIO1' == packet.slice(0,5).join('')) {
-			emitter.emit('bitbang');
+			bp.bitbang = true;
 			pos = 0;
 			packet = [];
 		}
@@ -116,3 +144,21 @@ function response_parser() {
 	};
 }
 
+
+// function response_parser(bp) {
+
+// 	if ('Function' == typeof bp.waitlist[data]) {
+// 		bp.waitlist[data](data);
+// 	}
+
+// function(emitter, buffer) {
+// 	// buffer: a Buffer instance
+
+// 	// check for special things:
+// 	if (buffer.slice(0,5) == new Buffer("BBIO1")) {
+// 		emitter.emit('bitbang');
+// 	}
+// 	else {
+// 		emitter.emit('data', buffer);
+// 	}
+// }
