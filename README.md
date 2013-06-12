@@ -1,1 +1,59 @@
-In the works: Bus pirate bindings for Node.
+##node-buspirate
+
+In the works: [Bus pirate](http://dangerousprototypes.com/docs/Bus_Pirate) bindings for [Node.js](http://nodejs.org), letting you control a Bus Pirate from any Node script.
+
+Currently only Uart has been implemented, but more is on the way! Also… the code is fairly untested, and may break your kit. 
+
+
+##Install
+
+The project is currently not in the npm registry due its youth, so you'll have to clone the repository to use it.
+
+
+##Usage
+
+Check the [examples](https://github.com/rmhsilva/node-buspirate/tree/master/examples) folder for examples of how it can be used.
+
+Basic idea:
+```javascript
+var pirate = new BusPirate('/dev/bus_pirate');
+
+pirate.on('connected', function() {
+	pirate.uart.start({
+		baudrate: 115200,
+		stop_bits: 1,
+		data_bits: 8,
+		data_par: 0     // ... and other options
+	});
+});
+
+pirate.uart.on('ready', function() {
+	pirate.config_periph(true,true,true,true);
+	pirate.uart.echo_rx(true);
+
+	setInterval(function() {
+		pirate.uart.write('ping UART\r\n');
+	}, 3000);
+});
+
+pirate.uart.on('data', function(data) {
+	process.stdout.write(data);
+});	
+```
+
+Eventually, there will be node modules to handle the other Bus Pirate modes, i.e. SPI, I2C, etc, which will be implemented similarly.
+
+
+##How
+
+The BusPirate object is an eventEmitter built on top of a node serial port object.  It sends and receives raw data from the hardware, and lets other modules handle the data.
+
+
+##todo
+
+* Write modules to handle other BusPirate modes.
+* Documentation
+* And much more...
+
+
+Although Javascript is probably not often used for hardware debugging, this project has been an interesting experiment which has proved to be useful.  It was started because I don't like Python and the Ruby bus pirate bindings weren't working.

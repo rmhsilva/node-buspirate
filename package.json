@@ -6,10 +6,15 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "repository": "",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/rmhsilva/node-buspirate.git"
+  },
   "author": "Ricardo da Silva",
   "license": "BSD",
   "dependencies": {
-    "serialport": "*"
+    "serialport": "*",
+    "asyncblock": "*",
+    "colors": "*"
   }
 }

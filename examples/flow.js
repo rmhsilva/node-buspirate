@@ -1,3 +1,7 @@
+/**
+ * Random tests of asyncblock
+ */
+
 var asyncblock = require('asyncblock');
 
 
