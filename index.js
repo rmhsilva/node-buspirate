@@ -62,8 +62,8 @@ function BusPirate(device, baud, debug) {
 		self.port.on('data', function(data) {
 			self.log('receive', format(data).red);
 			self.emit('receive', data);
-			console.log(self.waiters);
 
+			// Give the received data to any waiting functions
 			if (self.waiters.length > 0) {
 				for (var i = self.waiters.length - 1; i >= 0; i--) {
 					data = self.waiters[i](data, i, self.waiters);
@@ -180,37 +180,6 @@ BusPirate.prototype.sync_write = function(flow, data) {
  * @param  {string|array}   data
  * @param  {Function} callback
  */
-// BusPirate.prototype.wait_for_data = function(data, callback) {
-// 	var self = this;
-
-// 	// Convert data into a form that is easily compared
-// 	if (data instanceof Array || 'string' === typeof data)
-// 		data = new Buffer(data);
-// 	else
-// 		data = new Buffer([data]);
-
-// 	// A (private) function to compare received data with the required data
-// 	var testdata = function(data_received) {
-// 		self.log('listener', 'Waiting for: '+format(data).blue+' got: '+format(data_received).blue);
-// 		if (data.length != data_received.length)
-// 			return;
-
-// 		for (var i = data.length - 1; i >= 0; i--) {
-// 			if (data[i] != data_received[i])
-// 				return;
-// 		}
-
-// 		// Remove the listener when the desired data arrives
-// 		self.log('listener', 'Found '+format(data).green);
-// 		self.removeListener('receive', testdata);
-// 		callback(null);
-// 	};
-
-// 	// Set up an event handler to compare newly received data
-// 	this.on('receive', testdata);
-// };
-
-
 BusPirate.prototype.wait_for_data = function(data, callback) {
 	var self = this;
 
@@ -220,7 +189,9 @@ BusPirate.prototype.wait_for_data = function(data, callback) {
 	else
 		data = new Buffer([data]);
 
-	this.waiters.push(function(data_received, idx, arr) {
+	// Add the waiter function to the start of the waiters array.  It is 
+	// iterated over backwards.  This way, the first added is the first called
+	this.waiters.unshift(function(data_received, idx, arr) {
 		self.log('Listener', 'Waiting for: '+format(data).blue+' got: '+format(data_received).blue);
 		if (data_received.length < data.length)
 			return data_received;
@@ -230,14 +201,13 @@ BusPirate.prototype.wait_for_data = function(data, callback) {
 				return data_received;
 		}
 
+		// If matches, remove this waiter and the data it consumed
 		self.log('Listener', 'Found '+format(data).green);
 		arr.splice(idx, 1);
 		callback();
 		return data_received.slice(data.length);
 	});
 };
-
-
 
 
 /**
