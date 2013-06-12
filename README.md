@@ -18,10 +18,7 @@ Basic idea:
 ```javascript
 #!/usr/bin/env node
 
-<<<<<<< HEAD
 var BusPirate = require('./node-buspirate');
-=======
->>>>>>> 2fddde05770e7e857ef7d6dc2798874c001048b0
 var pirate = new BusPirate('/dev/bus_pirate');
 
 pirate.on('connected', function() {
