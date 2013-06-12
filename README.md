@@ -16,14 +16,15 @@ Check the [examples](https://github.com/rmhsilva/node-buspirate/tree/master/exam
 
 Basic idea:
 ```javascript
+#!/usr/bin/env node
+
 var pirate = new BusPirate('/dev/bus_pirate');
 
 pirate.on('connected', function() {
 	pirate.uart.start({
 		baudrate: 115200,
 		stop_bits: 1,
-		data_bits: 8,
-		data_par: 0     // ... and other options
+		data_bits: 8  // ... and other options
 	});
 });
 
@@ -46,7 +47,7 @@ Eventually, there will be node modules to handle the other Bus Pirate modes, i.e
 
 ##How
 
-The BusPirate object is an eventEmitter built on top of a node serial port object.  It sends and receives raw data from the hardware, and lets other modules handle the data.
+The BusPirate object is an eventEmitter built on top of a node serial port object.  It sends and receives raw data from the hardware, and lets other modules handle the specifics of each mode.
 
 
 ##todo

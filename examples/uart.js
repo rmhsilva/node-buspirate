@@ -19,8 +19,7 @@ pirate.on('connected', function() {
 	pirate.uart.start({
 		baudrate: 115200,
 		stop_bits: 1,
-		data_bits: 8,
-		data_par: 0     // ... and other options
+		data_bits: 8
 	});
 });
 
