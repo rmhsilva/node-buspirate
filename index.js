@@ -9,7 +9,8 @@ var SerialPort = require('serialport').SerialPort,
 	Buffer     = require('buffer').Buffer,
 	events     = require('events');
 
-var Uart = require('./lib/uart');
+var Uart = require('./lib/uart'),
+	Spi  = require('./lib/spi');
 
 module.exports = BusPirate;
 
@@ -32,6 +33,7 @@ function BusPirate(device, baud, debug) {
 	// Modes
 	this.mode = '';
 	this.uart = new Uart(self);
+	this.spi = new Spi(self);
 
 	// Once the port opens, enter binary mode (bitbang)
 	this.port.on('open', function() {
@@ -69,6 +71,14 @@ function BusPirate(device, baud, debug) {
 					data = self.waiters[i](data, i, self.waiters);
 				}
 			}
+		});
+
+		// Reset to binmode when exiting via Control-C
+		process.on('SIGINT', function() {
+			self.log('info', 'EXITING. Press Control-D to force'.red);
+			self.enter_binmode(function() {
+				process.exit(0);
+			});
 		});
 	});
 }
@@ -189,20 +199,27 @@ BusPirate.prototype.wait_for_data = function(data, callback) {
 	else
 		data = new Buffer([data]);
 
+	self.log('listener', 'Waiting for', format(data).yellow);
 	// Add the waiter function to the start of the waiters array.  It is 
 	// iterated over backwards.  This way, the first added is the first called
 	this.waiters.unshift(function(data_received, idx, arr) {
-		self.log('Listener', 'Waiting for: '+format(data).blue+' got: '+format(data_received).blue);
+		self.log('listener', 'Waiting for: '+format(data).blue+' got: '+format(data_received).blue);
 		if (data_received.length < data.length)
 			return data_received;
 
-		for (var i = data.length - 1; i >= 0; i--) {
-			if (data[i] != data_received[i])
-				return data_received;
+		// wait for '' => return the next lump of data that arrives
+		if (data.length === 0) {
+			data = data_received;
+		}
+		else {
+			for (var i = data.length - 1; i >= 0; i--) {
+				if (data[i] != data_received[i])
+					return data_received;
+			}
 		}
 
 		// If matches, remove this waiter and the data it consumed
-		self.log('Listener', 'Found '+format(data).green);
+		self.log('listener', 'Found '+format(data).green);
 		arr.splice(idx, 1);
 		callback();
 		return data_received.slice(data.length);
