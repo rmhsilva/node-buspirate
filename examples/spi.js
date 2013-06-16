@@ -26,5 +26,7 @@ pirate.spi.on('ready', function() {
 
 // Handle SPI data....
 pirate.spi.on('data', function(data) {
-	console.log(data);
+	console.log(data.mosi.map(function(x) {
+		return String.fromCharCode(x);
+	}), data.miso);
 });

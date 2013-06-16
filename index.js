@@ -39,6 +39,7 @@ function BusPirate(device, baud, debug) {
 	this.port.on('open', function() {
 		self.log('Device open', device);
 
+		// As soon as it's open, reset console and go binmode
 		self.reset_console();
 		self.enter_binmode(function(err) {
 			if (err) {
@@ -55,6 +56,7 @@ function BusPirate(device, baud, debug) {
 			}
 		});
 
+		// Generic error handler
 		self.port.on('error', function(err) {
 			self.log('error', err);
 			self.emit('error', err);
