@@ -108,7 +108,7 @@ BusPirate.prototype.enter_binmode = function(callback) {
 	}, 20, this);
 
 	// ... until BBIO1 is received
-	this.wait_for_data('BBIO1', function() {
+	this.wait_for_data('BBIO1', function(err) {
 		clearInterval(binmodeIntervalID);
 		self.log('Binmode entered successfully');
 		self.mode = 'binmode';
@@ -132,7 +132,7 @@ BusPirate.prototype.switch_mode = function(newmode, callback) {
 
 	this.log('info', 'Switching to mode: '+newmode.MODE_NAME);
 	this.write(newmode.MODE_ID);
-	this.wait_for_data(newmode.MODE_ACK, function(err) {
+	this.wait_for_data(newmode.MODE_ACK, function(err, data) {
 		self.log('mode', newmode.MODE_NAME);
 		self.mode = newmode.MODE_NAME;
 		self.emit('mode', newmode.MODE_NAME);
@@ -151,10 +151,10 @@ BusPirate.prototype.config_periph = function(power, pullups, aux, cs, callback) 
 	var self = this;
 
 	this.write(code);
-	this.wait_for_data(0x01, function() {
+	this.wait_for_data(0x01, function(err, data) {
 		self.log('peripherals', code);
 		self.emit('peripherals', code);
-		if (callback) callback();
+		if (callback) callback(err);
 	});
 };
 
@@ -201,7 +201,7 @@ BusPirate.prototype.wait_for_data = function(data, callback) {
 	else
 		data = new Buffer([data]);
 
-	self.log('listener', 'Waiting for', format(data).yellow);
+	self.log('listener', 'Added waiter for', format(data).yellow);
 	// Add the waiter function to the start of the waiters array.  It is 
 	// iterated over backwards.  This way, the first added is the first called
 	this.waiters.unshift(function(data_received, idx, arr) {
@@ -223,7 +223,7 @@ BusPirate.prototype.wait_for_data = function(data, callback) {
 		// If matches, remove this waiter and the data it consumed
 		self.log('listener', 'Found '+format(data).green);
 		arr.splice(idx, 1);
-		callback();
+		callback(null, data);
 		return data_received.slice(data.length);
 	});
 };
@@ -249,7 +249,7 @@ BusPirate.prototype.log = function() {
 	var argv = [].slice.call(arguments);
 
 	if (this.debug) {
-		console.log(argv.shift().green + ' ' + argv.map(format).join(', '));
+		console.log(argv.shift().green + ' ' + argv.map(format).join(' '));
 	}
 };
 
