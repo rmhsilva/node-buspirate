@@ -2,12 +2,18 @@
 
 In the works: [Bus pirate](http://dangerousprototypes.com/docs/Bus_Pirate) bindings for [Node.js](http://nodejs.org), letting you control a Bus Pirate from any Node script.
 
-Currently only Uart has been implemented, but more is on the way! Also… the code is fairly untested, and may break your kit. 
+The code is fairly untested, and may break your kit.  However, these modes have been mostly implemented, and partially tested:
+
+* UART (Read/Write/Bridge)
+* SPI (Sniff/Write-read)
 
 
 ##Install
 
-The project is currently not in the npm registry due its youth, so you'll have to clone the repository to use it.
+The project is currently not in the npm registry due its youth, so you'll have to clone the repository to use it.  Then install dependencies.
+
+	git clone https://github.com/rmhsilva/node-buspirate.git
+	cd node-buspirate && npm install
 
 
 ##Usage
@@ -43,12 +49,12 @@ pirate.uart.on('data', function(data) {
 });	
 ```
 
-Eventually, there will be node modules to handle the other Bus Pirate modes, i.e. SPI, I2C, etc, which will be implemented similarly.
+The plan is to add other Bus Pirate modes (I2C...) which will be used similarly.
 
 
 ##How
 
-The BusPirate object is an eventEmitter built on top of a node serial port object.  It sends and receives raw data from the hardware, and lets other modules handle the specifics of each mode.
+The BusPirate object is an eventEmitter built on top of a node Serialport.  It gets the hardware into raw bitbang mode, then just sends and receives raw data from the hardware, and lets other modules handle the specifics of each mode.
 
 
 ##todo
