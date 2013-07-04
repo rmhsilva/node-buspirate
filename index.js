@@ -1,13 +1,18 @@
 /**
+ * node-buspirate: Bus Pirate bindings for Node.js!
+ * Letting you easily... 
+ *    - control your buspirate through a webserver
+ *    - remotely debug things
+ *    - much more...
  * See http://dangerousprototypes.com/2009/10/09/bus-pirate-raw-bitbang-mode/
  */
 
 var SerialPort = require('serialport').SerialPort,
-	asyncblock = require('asyncblock'),
-	colors     = require('colors'),
-	util       = require('util'),
-	Buffer     = require('buffer').Buffer,
-	events     = require('events');
+	asyncblock   = require('asyncblock'),
+	colors       = require('colors'),
+	util         = require('util'),
+	Buffer       = require('buffer').Buffer,
+	events       = require('events');
 
 var Uart = require('./lib/uart'),
 	Spi  = require('./lib/spi');
@@ -15,7 +20,8 @@ var Uart = require('./lib/uart'),
 module.exports = BusPirate;
 
 /**
- * BusPirate constructor
+ * BusPirate constructor. Creates the object that sets up everything correctly
+ * for higher level modules (uart, spi, etc).
  * @param {string} device  Path to device, eg /dev/tty.usbblah. Required
  * @param {number} baud  Baud rate to use. Default 115200
  * @param {bool} debug Debug mode flag, default false
@@ -23,8 +29,8 @@ module.exports = BusPirate;
 function BusPirate(device, baud, debug) {
 	events.EventEmitter.call(this);
 	var self = this;
-	this.debug = debug || true;
-	self.waiters = [];
+	this.debug = debug || false;
+	this.waiters = [];
 
 	baud = baud || 115200;
 	this.log('info', 'Initialising BusPirate at '+device);
@@ -37,7 +43,13 @@ function BusPirate(device, baud, debug) {
 
 	// Once the port opens, enter binary mode (bitbang)
 	this.port.on('open', function() {
-		self.log('Device open', device);
+		self.log('info', 'Device open', device);
+
+		// Generic error handler
+		self.port.on('error', function(err) {
+			self.log('error', err);
+			self.emit('error', err);
+		});
 
 		// As soon as it's open, reset console and go binmode
 		self.reset_console();
@@ -56,12 +68,6 @@ function BusPirate(device, baud, debug) {
 			}
 		});
 
-		// Generic error handler
-		self.port.on('error', function(err) {
-			self.log('error', err);
-			self.emit('error', err);
-		});
-
 		// Set up handlers for data sent from the buspirate
 		self.port.on('data', function(data) {
 			self.log('receive', format(data).red);
@@ -77,7 +83,7 @@ function BusPirate(device, baud, debug) {
 
 		// Reset to binmode when exiting via Control-C
 		process.on('SIGINT', function() {
-			self.log('info', 'EXITING. Press Control-D to force'.red);
+			console.log('EXITING. Press Control-D to force'.red);
 			self.enter_binmode(function() {
 				process.exit(0);
 			});
@@ -93,7 +99,7 @@ util.inherits(BusPirate, events.EventEmitter);
  * Make sure we aren't in any menus or anything, and send # to reset
  */
 BusPirate.prototype.reset_console = function() {
-	this.write([0x0d, 0x0d, 0x0d, 0x0d, 0x0d,          // Enter, 10 times
+	this.write([0x0d, 0x0d, 0x0d, 0x0d, 0x0d,    // Enter, 10 times
 				0x0d, 0x0d, 0x0d, 0x0d, 0x0d, 0x23]);  // and then #
 };
 
@@ -118,9 +124,11 @@ BusPirate.prototype.enter_binmode = function(callback) {
 };
 
 /**
- * Switches the buspirate mode by sending the mode id byte, waiting for
- * the correct response, and executing callback when that happens.
- * The mode module must pass in the above items in an object.
+ * Switches the buspirate mode to MODE_NAME by sending the MODE_ID byte, 
+ * waiting for the correct response, MODE_ACK, and executing callback when 
+ * that happens. The mode module must pass in the above items in an object.
+ * @param  {Array}   newmode  Array of constants that describe the new mode.
+ * @param  {Function} callback
  */
 BusPirate.prototype.switch_mode = function(newmode, callback) {
 	var self = this;
@@ -129,8 +137,8 @@ BusPirate.prototype.switch_mode = function(newmode, callback) {
 		this.reset_console();
 		this.enter_binmode();
 	}
+	else this.log('info', 'Switching to mode: '+newmode.MODE_NAME);
 
-	this.log('info', 'Switching to mode: '+newmode.MODE_NAME);
 	this.write(newmode.MODE_ID);
 	this.wait_for_data(newmode.MODE_ACK, function(err, data) {
 		self.log('mode', newmode.MODE_NAME);
@@ -142,7 +150,7 @@ BusPirate.prototype.switch_mode = function(newmode, callback) {
 };
 
 /**
- * Set the BusPirate peripherals to the specified state (synchronously)
+ * Set the BusPirate peripherals to the specified state (asynchronously)
  * @return {err}  null if everything worked fine
  */
 BusPirate.prototype.config_periph = function(power, pullups, aux, cs, callback) {
@@ -178,6 +186,8 @@ BusPirate.prototype.write = function(data, callback) {
 /**
  * Synchronous version of the above - only returns when it's finished writing
  * Same parameters as above.  Uses Fibers - event loop isn't blocked.
+ * @param  {Asyncblock} flow  The asyncblock 'flow' object to be used
+ * @param  {string|array|number} data  Data to write
  */
 BusPirate.prototype.sync_write = function(flow, data) {
 	var self = this;
@@ -201,7 +211,8 @@ BusPirate.prototype.wait_for_data = function(data, callback) {
 	else
 		data = new Buffer([data]);
 
-	self.log('listener', 'Added waiter for', format(data).yellow);
+	this.log('listener', 'Added waiter for', format(data).yellow);
+
 	// Add the waiter function to the start of the waiters array.  It is 
 	// iterated over backwards.  This way, the first added is the first called
 	this.waiters.unshift(function(data_received, idx, arr) {
@@ -234,7 +245,7 @@ BusPirate.prototype.wait_for_data = function(data, callback) {
  */
 BusPirate.prototype.sync_wait = function(flow, data, timeout) {
 	flow.on('taskTimeout', function() {
-		return new Error('Timeout while setting baud rate');
+		return new Error('Timeout while waiting for:', data);
 	});
 
 	this.wait_for_data(data, flow.add({timeout: timeout}));
@@ -249,7 +260,7 @@ BusPirate.prototype.log = function() {
 	var argv = [].slice.call(arguments);
 
 	if (this.debug) {
-		console.log(argv.shift().green + ' ' + argv.map(format).join(' '));
+		console.log('BP: '.cyan + argv.shift().green + ' ' + argv.map(format).join(' '));
 	}
 };
 

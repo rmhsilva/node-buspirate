@@ -5,7 +5,7 @@
 var BusPirate = require('../');
 
 // Initialise buspirate.  This also does a console reset and enters binmode
-var pirate = module.exports = new BusPirate('/dev/tty.usbserial-A9014MJZ');
+var pirate = new BusPirate('/dev/tty.usbserial-A9014MJZ', 115200, true);
 
 // The pirate is an event emitter - it lets the code know when stuff happens
 // pirate.on('error', function(e) {
@@ -25,7 +25,7 @@ pirate.spi.on('ready', function() {
 	// 	console.log('Read: ', b);
 	// });
 
-	pirate.spi.write_read('ABC', function(data) {
+	pirate.spi.write_read('ABCDEFGHIJKLMNOPABCDEF', function(err, data) {
 		console.log('Received: ', data);
 	});
 
@@ -39,3 +39,5 @@ pirate.spi.on('sniff', function(data) {
 		return String.fromCharCode(x);
 	}), data.miso);
 });
+
+module.exports = pirate;

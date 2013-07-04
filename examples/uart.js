@@ -5,7 +5,7 @@
 var BusPirate = require('../');
 
 // Initialise buspirate.  This also does a console reset and enters binmode
-var pirate = new BusPirate('/dev/tty.usbserial-A9014MJZ');
+var pirate = new BusPirate('/dev/tty.usbserial-A9014MJZ', 115200, true);
 
 
 // The pirate is an event emitter - it lets the code know when stuff happens
