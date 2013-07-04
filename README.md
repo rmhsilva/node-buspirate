@@ -1,6 +1,6 @@
-##node-buspirate
+#node-buspirate
 
-In the works: [Bus pirate](http://dangerousprototypes.com/docs/Bus_Pirate) bindings for [Node.js](http://nodejs.org), letting you control a Bus Pirate from any Node script.
+In the works: [Bus pirate](http://dangerousprototypes.com/docs/Bus_Pirate) bindings for [Node.js](http://nodejs.org), letting you control a Bus Pirate from any Node.js script.
 
 The code is fairly untested, and may break your kit.  However, these modes have been mostly implemented, and partially tested:
 
@@ -10,7 +10,11 @@ The code is fairly untested, and may break your kit.  However, these modes have 
 
 ##Install
 
-The project is currently not in the npm registry due its youth, so you'll have to clone the repository to use it.  Then install dependencies.
+node-buspirate is in the npm registry!
+
+	npm install node-buspirate
+
+Or you could always clone / fork this repo:
 
 	git clone https://github.com/rmhsilva/node-buspirate.git
 	cd node-buspirate && npm install

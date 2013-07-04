@@ -2,6 +2,8 @@
   "name": "node-buspirate",
   "version": "0.0.1",
   "description": "Node.js bindings for Bus Pirate",
+  "author": "Ricardo da Silva",
+  "license": "BSD",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -10,8 +12,6 @@
     "type": "git",
     "url": "https://github.com/rmhsilva/node-buspirate.git"
   },
-  "author": "Ricardo da Silva",
-  "license": "BSD",
   "dependencies": {
     "serialport": "*",
     "asyncblock": "*",
