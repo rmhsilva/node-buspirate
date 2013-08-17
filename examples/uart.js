@@ -17,7 +17,7 @@ pirate.on('error', function(e) {
 pirate.on('connected', function() {
 	// Set up
 	pirate.uart.start({
-		baudrate: 115200,
+		baudrate: 9600,
 		stop_bits: 1,
 		data_bits: 8
 	});
@@ -26,19 +26,19 @@ pirate.on('connected', function() {
 
 pirate.uart.on('ready', function() {
 	// Do other things with uart here...
-	pirate.config_periph(true,true,true,true);
+	pirate.config_periph(true,false,true,false);
 	pirate.uart.echo_rx(true);
 
 	setInterval(function() {
-		pirate.uart.write('ping\r\n');
+		pirate.uart.write('ABC');
 	}, 3000);
 });
 
 
 pirate.uart.on('data', function(data) {
 	// Do things with data received
-	//console.log('UART> '+data);
-	process.stdout.write(data);
+	console.log('UART: '+data);
+	// process.stdout.write(data);
 });
 
 module.exports = pirate;
