@@ -33,14 +33,14 @@ var pirate = new BusPirate('/dev/bus_pirate');
 
 pirate.on('connected', function() {
 	pirate.uart.start({
-		baudrate: 115200,
+		baudrate: 9600,
 		stop_bits: 1,
 		data_bits: 8  // ... and other options
 	});
 });
 
 pirate.uart.on('ready', function() {
-	pirate.config_periph(true,true,true,true);
+	pirate.config_periph(true,false,true,false);
 	pirate.uart.echo_rx(true);
 
 	setInterval(function() {
