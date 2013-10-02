@@ -14,7 +14,7 @@ node-buspirate is in the npm registry!
 
 	npm install node-buspirate
 
-Or you could always clone / fork this repo:
+Or you could always clone / fork this repo: 
 
 	git clone https://github.com/rmhsilva/node-buspirate.git
 	cd node-buspirate && npm install
